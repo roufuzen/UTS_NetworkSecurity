@@ -234,11 +234,11 @@ docker run --rm -v "%cd%:/work" -w /work uts-kali-tools python3 -c "import struc
 
 Aircrack-ng tidak berhasil menemukan jaringan dari file `handshake-k5.cap`. Output yang diperoleh:
 
-![T4 Aircrack-ng](images/T4_AircrackPacket)
+![T4 Aircrack-ng](images/T4_AircrackPacket.png)
 
 Hasil pemeriksaan header PCAP menunjukkan:
 
-![T4 Tolongdicekyhdosen](images/T4_HeaderPCAP)
+![T4 Tolongdicekyhdosen](images/T4_HeaderPCAP.png)
 
 Berdasarkan hasil tersebut, file capture tidak dapat dibaca sebagai capture Wi-Fi 802.11 yang valid. Panjang paket yang tercatat juga tidak sesuai dengan ukuran file.
 
