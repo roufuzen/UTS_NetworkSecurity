@@ -26,7 +26,7 @@ Setelah file berhasil dibuat, container yang digunakan dihapus. Kemudian file di
 Hasilnya, isi file tetap tersimpan meskipun container sebelumnya sudah dihapus. Hal ini menunjukkan bahwa Docker volume dapat menyimpan data secara persisten.
 
 ### Command
-```text
+```bash
 docker volume create vol-k5
 docker run --name w-k5 -v vol-k5:/data alpine sh -c 'echo NIM-ANDA > /data/laporan-k5.txt'
 docker rm w-k5
@@ -35,16 +35,17 @@ docker run --rm -v vol-k5:/data alpine cat /data/laporan-k5.txt
 
 ### Screenshot
 
-![T1 Volume](images/T1_Volume.png)
+![T1 Volume](images/T1_Compose.png)
 
 ## B. Docker Compose
 
 Docker Compose digunakan untuk menjalankan container attacker dan target secara bersamaan.
 
-Setelah container berhasil dijalankan, dilakukan pengujian komunikasi dari attacker menuju target menggunakan perintah:
-
+### Command
 ```bash
-wget -qO- http://target
+docker compose -p k5 -f b/b1-compose/docker-compose.yml up -d
+docker compose -p k5 -f b/b1-compose/docker-compose.yml exec attacker wget -qO- http://target
+docker compose -p k5 -f b/b1-compose/docker-compose.yml down -v
 ```
 
 Hasil pengujian menampilkan halaman Welcome to nginx. Ini menunjukkan bahwa attacker berhasil mengakses layanan web pada container target melalui jaringan Docker.
@@ -53,7 +54,7 @@ Setelah pengujian selesai, container dan network dihentikan menggunakan Docker C
 
 ### Screenshot
 
-![T1 Compose](images/T1_Compose.png)
+![T1 Compose](images/T1_Volume.png)
 
 ## Kesimpulan
 
@@ -77,6 +78,11 @@ Hasil hash yang diperoleh:
 
 Kedua hash memiliki nilai yang sama. Artinya, file hasil dekripsi sesuai dengan file aslinya.
 
+### Command
+```bash
+docker run --rm -v "$PWD":/work uts-openssl sh -c 'echo isi laporan k5 > laporan-k5.txt && openssl enc -aes-256-cbc -pbkdf2 -salt -in laporan-k5.txt -out laporan-k5.enc -pass pass:kunci-k5-2026 && sha256sum laporan-k5.txt && openssl enc -d -aes-256-cbc -pbkdf2 -in laporan-k5.enc -out hasil-k5.txt -pass pass:kunci-k5-2026 && sha256sum hasil-k5.txt'
+```
+
 ### Screenshot
 
 ![T2 Enkripsi dan Dekripsi AES](images/T2_EnkripDekripAES.png)
@@ -93,6 +99,11 @@ Sertifikat dibuat menggunakan OpenSSL dengan informasi berikut:
 - Masa berlaku: 30 hari
 
 Sertifikat yang digunakan merupakan self-signed certificate, yaitu sertifikat yang ditandatangani oleh pembuatnya sendiri.
+
+### Command
+```bash
+docker run --rm -v "$PWD":/work uts-openssl sh -c 'openssl req -x509 -newkey rsa:2048 -nodes -keyout key-k5.pem -out cert-k5.pem -days 30 -subj /CN=k5.uts.local && openssl x509 -in cert-k5.pem -noout -subject -issuer -dates'
+```
 
 ### Screenshot
 
@@ -118,6 +129,14 @@ Pada praktikum ini dibuat tiga container, yaitu:
 
 Ketiga container dihubungkan melalui network Docker bernama `lab-arp-k5`.
 
+### Command
+```bash
+docker network create lab-arp-k5
+docker run -d --name korban-k5 --network lab-arp-k5 --cap-add NET_ADMIN uts-kali-tools
+docker run -d --name gateway-k5 --network lab-arp-k5 --cap-add NET_ADMIN uts-kali-tools
+docker run -d --name penyerang-k5 --network lab-arp-k5 --cap-add NET_ADMIN uts-kali-tools
+```
+
 ### Screenshot
 
 ![T3 Container](images/T3_Container.png)
@@ -127,6 +146,11 @@ Ketiga container dihubungkan melalui network Docker bernama `lab-arp-k5`.
 Sebelum pengujian dilakukan, tabel ARP pada container korban diperiksa untuk mengetahui pemetaan IP address dan MAC address gateway.
 
 Alamat gateway yang diamati adalah `172.18.0.3`.
+
+### Command
+```bash
+docker exec korban-k5 arp -a
+```
 
 ### Screenshot
 
@@ -150,6 +174,12 @@ Setelah spoofing, pemetaan berubah menjadi MAC address penyerang:
 
 Perubahan ini menunjukkan bahwa informasi ARP dapat dimanipulasi oleh perangkat lain dalam jaringan lokal.
 
+### Command
+```bash
+docker exec -d penyerang-k5 timeout 20 arpspoof -i eth0 -t <ip-korban> <ip-gateway>
+docker exec korban-k5 arp -a
+```
+
 ### Screenshot
 
 ![T3 Change MAC Gateway](images/T3_ChangeMacGW.png)
@@ -159,6 +189,12 @@ Perubahan ini menunjukkan bahwa informasi ARP dapat dimanipulasi oleh perangkat 
 Setelah pengujian selesai, dilakukan mitigasi menggunakan static ARP.
 
 Pemetaan IP gateway dikembalikan ke MAC address aslinya dan status entri berubah menjadi `PERM`.
+
+### Command
+```bash
+docker exec korban-k5 arp -s <ip-gateway> $(docker exec gateway-k5 cat /sys/class/net/eth0/address)
+docker exec korban-k5 arp -a
+```
 
 ### Screenshot
 
