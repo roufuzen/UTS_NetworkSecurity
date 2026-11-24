@@ -210,23 +210,48 @@ Penggunaan static ARP dapat membantu mencegah perubahan pemetaan pada entri yang
 
 # Tugas 4 — WPA2 Handshake
 
-## Tujuan
+### Perintah yang Digunakan
 
-Praktikum ini bertujuan memahami proses WPA2 four-way handshake dan mengetahui bagaimana kekuatan password memengaruhi keamanan jaringan Wi-Fi.
+Menjalankan Aircrack-ng:
 
-## Penjelasan
+```cmd
+docker run --rm -v "%cd%:/work" -w /work uts-kali-tools aircrack-ng -w wordlist-k5.txt handshake-k5.cap
+```
 
-WPA2 menggunakan proses four-way handshake untuk memastikan bahwa client dan access point memiliki material kunci yang sesuai.
+Memeriksa file capture menggunakan tcpdump:
 
-Proses ini juga digunakan untuk membentuk kunci sesi yang digunakan dalam komunikasi jaringan.
+```cmd
+docker run --rm -v "%cd%:/work" -w /work uts-kali-tools tcpdump -r handshake-k5.cap -c 5
+```
 
-Pengujian capture handshake belum diselesaikan karena file capture yang dibutuhkan belum tersedia dan perangkat yang digunakan tidak memiliki adapter Wi-Fi fisik untuk melakukan capture secara langsung.
+Memeriksa header dan panjang paket PCAP:
 
-## Kesimpulan
+```cmd
+docker run --rm -v "%cd%:/work" -w /work uts-kali-tools python3 -c "import struct; f=open('handshake-k5.cap','rb'); h=f.read(24); print('PCAP header:', h.hex()); print('Magic:', h[:4].hex()); print('Link type:', struct.unpack('<I',h[20:24])[0]); p=f.read(16); print('Packet header:', p.hex()); print('Captured length:', struct.unpack('<I',p[8:12])[0]); print('Original length:', struct.unpack('<I',p[12:16])[0])"
+```
 
-Dari praktikum ini dapat dipahami bahwa WPA2 menggunakan four-way handshake untuk membentuk koneksi yang aman. Penggunaan password yang kuat dan tidak mudah ditebak juga penting untuk menjaga keamanan jaringan Wi-Fi.
+### Hasil
 
-**Catatan:** Pengujian capture handshake belum selesai.
+Aircrack-ng tidak berhasil menemukan jaringan dari file `handshake-k5.cap`. Output yang diperoleh:
+
+![T4 Aircrack-ng](images/T4_AircrackPacket)
+
+Hasil pemeriksaan header PCAP menunjukkan:
+
+![T4 Tolongdicekyhdosen](images/T4_HeaderPCAP)
+
+Berdasarkan hasil tersebut, file capture tidak dapat dibaca sebagai capture Wi-Fi 802.11 yang valid. Panjang paket yang tercatat juga tidak sesuai dengan ukuran file.
+
+### Penjelasan Empat Langkah Handshake WPA2
+
+1. **Message 1:** Access Point mengirim ANonce kepada client.
+2. **Message 2:** Client mengirim SNonce dan MIC kepada Access Point.
+3. **Message 3:** Access Point mengirim konfigurasi kunci terenkripsi beserta MIC.
+4. **Message 4:** Client mengirim konfirmasi bahwa proses pemasangan kunci berhasil.
+
+### Kesimpulan
+
+Pengujian handshake WPA2 belum berhasil dilakukan karena file capture bawaan penguji tidak valid untuk dianalisis. Hasil `KEY FOUND` maupun `KEY NOT FOUND` belum dapat ditentukan. Diperlukan file capture pengganti yang valid untuk melanjutkan pengujian.
 
 ---
 
@@ -252,6 +277,12 @@ Tipe ICMP balasan: 0
 ```
 
 Tipe ICMP 0 merupakan Echo Reply, yaitu balasan dari Echo Request yang dikirim sebelumnya.
+
+### Command
+
+```bash
+docker run --rm --network lab-arp-k5 -v "$PWD/kasus/k5-scapy:/work" uts-kali-tools python3 /work/kirim_icmp.py <ip-korban>
+```
 
 ### Screenshot
 
@@ -293,6 +324,14 @@ Hasil pemeriksaan menunjukkan nilai:
 
 Artinya, tidak ditemukan koneksi dengan status SYN_RECV pada saat pemeriksaan awal.
 
+### Command
+
+```bash
+docker compose -p k5 -f b/b3-syn-flood/docker-compose.yml up -d
+docker compose -p k5 -f b/b3-syn-flood/docker-compose.yml exec target netstat -ant | grep -c SYN_RECV
+docker compose -p k5 -f b/b3-syn-flood/docker-compose.yml exec -d attacker timeout 15 hping3 -S -p 80 --flood target
+```
+
 ### Screenshot
 
 ![T6 Sebelum Pengujian](images/T6_SebelumAtt.png)
@@ -326,6 +365,12 @@ Hasil capture menunjukkan:
 0 packets dropped by kernel
 ```
 
+### Command
+
+```bash
+docker compose -p k5 -f b/b3-syn-flood/docker-compose.yml exec attacker sh -c 'timeout 10 tcpdump -i eth0 -nn tcp port 80 & sleep 1; curl -s http://target > /dev/null; sleep 10'
+docker compose -p k5 -f b/b3-syn-flood/docker-compose.yml down -v
+```
 ### Screenshot
 
 ![T6 Sesudah Pengamatan](images/T6_SesudahAtt.png)
