@@ -544,11 +544,3 @@ Pengujian berhasil menunjukkan komunikasi DNS antara container attacker dan DNS 
 Konversi NIM ke hexadecimal dan proses decode kembali juga menunjukkan bahwa data dapat direpresentasikan dalam bentuk hexadecimal.
 
 ---
-
-# Kesimpulan Umum
-
-Berdasarkan seluruh praktikum UTS Network Security Kasus 5, dapat dipahami beberapa konsep keamanan jaringan, mulai dari penggunaan Docker dan volume, enkripsi AES, sertifikat digital, ARP spoofing, komunikasi ICMP, TCP three-way handshake, hingga pengamatan dan analisis DNS.
-
-Setiap praktikum memberikan pemahaman mengenai cara kerja jaringan, kemungkinan celah keamanan, serta metode pengamatan dan mitigasi yang dapat dilakukan.
-
-Beberapa bagian pengujian, seperti WPA2 handshake dan simulasi SYN flood, belum diselesaikan sepenuhnya. Hasil laporan disusun berdasarkan pengujian dan bukti yang telah diperoleh selama praktikum.
