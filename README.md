@@ -25,6 +25,14 @@ Setelah file berhasil dibuat, container yang digunakan dihapus. Kemudian file di
 
 Hasilnya, isi file tetap tersimpan meskipun container sebelumnya sudah dihapus. Hal ini menunjukkan bahwa Docker volume dapat menyimpan data secara persisten.
 
+### Command
+```text
+docker volume create vol-k5
+docker run --name w-k5 -v vol-k5:/data alpine sh -c 'echo NIM-ANDA > /data/laporan-k5.txt'
+docker rm w-k5
+docker run --rm -v vol-k5:/data alpine cat /data/laporan-k5.txt
+```
+
 ### Screenshot
 
 ![T1 Volume](images/T1_Volume.png)
